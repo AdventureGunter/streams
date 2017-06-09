@@ -1,0 +1,12 @@
+[
+{"id":"id_9","title":"title_9","authors":[{"id":"id_9","firstName":"firstName_9","lastName":"lastName_9"},{"id":"id_8","firstName":"firstName_8","lastName":"lastName_8"},{"id":"id_7","firstName":"firstName_7","lastName":"lastName_7"}]},
+{"id":"id_8","title":"title_8","authors":[{"id":"id_6","firstName":"firstName_6","lastName":"lastName_6"}]},
+{"id":"id_7","title":"title_7","authors":[{"id":"id_5","firstName":"firstName_5","lastName":"lastName_5"},{"id":"id_4","firstName":"firstName_4","lastName":"lastName_4"},{"id":"id_3","firstName":"firstName_3","lastName":"lastName_3"}]},
+{"id":"id_6","title":"title_6","authors":[{"id":"id_2","firstName":"firstName_2","lastName":"lastName_2"}]},
+{"id":"id_5","title":"title_5","authors":[{"id":"id_1","firstName":"firstName_1","lastName":"lastName_1"}]},
+{"id":"id_4","title":"title_4","authors":[{"id":"id_0","firstName":"firstName_0","lastName":"lastName_0"},{"id":"id_9","firstName":"firstName_9","lastName":"lastName_9"},{"id":"id_8","firstName":"firstName_8","lastName":"lastName_8"}]},
+{"id":"id_3","title":"title_3","authors":[{"id":"id_7","firstName":"firstName_7","lastName":"lastName_7"},{"id":"id_6","firstName":"firstName_6","lastName":"lastName_6"},{"id":"id_5","firstName":"firstName_5","lastName":"lastName_5"}]},
+{"id":"id_2","title":"title_2","authors":[{"id":"id_4","firstName":"firstName_4","lastName":"lastName_4"},{"id":"id_3","firstName":"firstName_3","lastName":"lastName_3"}]},
+{"id":"id_1","title":"title_1","authors":[{"id":"id_2","firstName":"firstName_2","lastName":"lastName_2"}]},
+{"id":"id_0","title":"title_0","authors":[{"id":"id_1","firstName":"firstName_1","lastName":"lastName_1"},{"id":"id_0","firstName":"firstName_0","lastName":"lastName_0"},{"id":"id_9","firstName":"firstName_9","lastName":"lastName_9"}]}
+]
