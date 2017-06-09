@@ -198,26 +198,26 @@ module.exports.parseAuthorsToDB = function() {
 };
 
 function findOrCreate (Model, creatingObj) {
-   return Model.findOne({id: creatingObj.id})
-            .then((foundObj) => {
-           if (!foundObj) {
-               Model.create(creatingObj)
-                   .then((createdObj) => {
-                       //console.log('You successfully create obj with ID ' + createdObj.id);
-                       return createdObj;
-                   })
-                   .catch((err) => {reject(err)})
-           }
-           else {
-               //console.log('Object with this ID already exist');
-           }
-       })
-       .catch((err) => {reject(err)})
+    return Model.findOne({id: creatingObj.id})
+        .then((foundObj) => {
+            if (!foundObj) {
+                Model.create(creatingObj)
+                    .then((createdObj) => {
+                        //console.log('You successfully create obj with ID ' + createdObj.id);
+                        return createdObj;
+                    })
+                    .catch((err) => {reject(err)})
+            }
+            else {
+                //console.log('Object with this ID already exist');
+            }
+        })
+        .catch((err) => {reject(err)})
 }
 
 module.exports.parseBookFromDBtoJson = function  () {
     return new Promise((resolve, reject) => {
-        let stream = Book.find().cursor({ transform: transformToJson()});
+        let stream = Book.find().cursor({transform: transformToJson()});
         const booksDBToJson = fs.createWriteStream(config.mongoose.booksJsonPath);
         booksDBToJson.on('finish', () => {
             resolve('parse Book From DB To json finished')
@@ -236,6 +236,20 @@ module.exports.parseBookFromDBtoJson = function  () {
             return '\r\n' + JSON.stringify(data) + ",";
         }
     }
+};
+
+module.exports.getBooksForRandAuthor = function () {
+    return Author.findOne()
+        .then((author) => {
+            return Author.findOne({_id : author._id})
+                .then(() => author)
+                .catch((err) => err)
+        })
+        .then((author) => {
+            let testAuthor = new Author(author);
+            return testAuthor.findAllBooks()
+        })
+        .catch((err) => err)
 };
 
 

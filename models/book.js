@@ -24,6 +24,12 @@ const bookSchema = new Schema({
     }]
 });
 
+
+bookSchema.method.findAuthors = function () {
+    return this.get('authors');
+};
+
+
 let Book = mongoose.model('Book', bookSchema);
 
 module.exports = Book;

@@ -15,7 +15,7 @@ mongoose.connect(config.mongoose.url)
         () => {console.log('connected to db successfully')},
         (err) => {throw err}
     )
-    .then(generator.generateBooks)
+    /*.then(generator.generateBooks)
     .then((msg) => {console.log(msg)})
     .then(generator.generateAuthors)
     .then((msg) => {console.log(msg)})
@@ -23,7 +23,8 @@ mongoose.connect(config.mongoose.url)
     .then((msg) => {console.log(msg)})
     .then(parser.parseBooksToDB)
     .then((msg) => {console.log(msg)})
-    .then(parser.parseBookFromDBtoJson)
+    .then(parser.parseBookFromDBtoJson)*/
+    .then(parser.getBooksForRandAuthor)
     .then((msg) => {
         console.log(msg);
         process.exit();

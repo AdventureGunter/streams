@@ -2,8 +2,11 @@
  * Created by User on 09.06.2017.
  */
 const mongoose = require('mongoose');
+mongoose.Promise = Promise;
 const Schema = mongoose.Schema;
 const mongoose_simple_random = require('mongoose-simple-random');
+
+let Book = require('./book');
 
 const authorSchema = new Schema({
     id: {
@@ -39,8 +42,16 @@ authorSchema.statics.findRandomAuthorsIDs = function(limit) {
     })
 };
 
+authorSchema.methods.findAllBooks = function () {
+    return new Promise((resolve, reject) => {
+        Book.find({authors : this._id}, function (err, res) {
+            if (err) reject (err);
+            resolve (res);
+        })
+    });
+
+};
+
 let Author = mongoose.model('Author', authorSchema);
-
-
 
 module.exports = Author;
