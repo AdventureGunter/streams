@@ -5,41 +5,34 @@ const generator = require('./generator/generate');
 const parser = require('./parser/parse');
 const config = require('./config');
 const runTimer = require('./timer/timer');
-const mongoose = require('mongoose');
-mongoose.Promise = Promise;
+const mongooseRequests = require ('./db/mongooseRequests');
+const mongoose = require('./db/mongooseConfig');
 
 runTimer();
 
-mongoose.connect(config.mongoose.url)
-    .then(
-        () => {console.log('connected to db successfully')},
-        (err) => {throw err}
-    )
-    /*.then(generator.generateBooks)
-    .then((msg) => {console.log(msg)})
-    .then(generator.generateAuthors)
-    .then((msg) => {console.log(msg)})
+generator.generateAuthors()
+    /*.then((msg) => {console.log(msg)})
     .then(parser.parseAuthorsToDB)
     .then((msg) => {console.log(msg)})
-    .then(parser.parseBooksToDB)
+    .then(generator.generateBooks)
     .then((msg) => {console.log(msg)})
-    .then(parser.parseBookFromDBtoJson)*/
-    .then(parser.getBooksForRandAuthor)
+    .then(parser.parseBooksToDB)
+    .then((msg) => {console.log(msg)})*/
+    //.then(parser.parseBookFromDBtoJson)
+    //.then((msg) => {console.log(msg)})
+    //.then(() => mongooseRequests.findAllBooksForAuthor('593d994c2ceecd265c3fd2da'))
+    //.then((msg) => {console.log(msg)})
+    .then(mongooseRequests.skip10authorsANDfindBooksForEach3dAuthor)
+    /*.then((msg) => {console.log(msg)})
+    .then(() => mongooseRequests.findAuthorsForBook('593d9ea12ceecd265c4257c9'))
+    .then((msg) => {console.log(msg)})
+    .then(mongooseRequests.populate1st10books)*/
     .then((msg) => {
         console.log(msg);
+         return mongoose.disconnect();
+
+    })
+    .then(() => {
         process.exit();
     })
-    /*.then(generator.generateBooks)
-    .then((msg) => {console.log(msg)})
-    .then(generator.generateAuthors)
-    .then((msg) => {console.log(msg)})
-    .then(parser.parseAuthors)
-    .then((msg) => {console.log(msg)})
-    .then(parser.parseBooks)
-    .then((msg) => {console.log(msg)})
-    .then(parser.parseBookToAuthorsJson)
-    .then((msg) => {
-        console.log(msg);
-        process.exit();
-    })*/
     .catch(err => {console.log(err) } );

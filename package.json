@@ -4,6 +4,7 @@
   "description": "",
   "main": "generate.js",
   "scripts": {
+    "start": "node main.js",
     "test": "mocha --timeout 0"
   },
   "author": "",
@@ -15,6 +16,6 @@
     "line-by-line": "^0.1.5",
     "mocha": "^3.4.2",
     "mongoose": "^4.10.5",
-    "mongoose-simple-random": "^0.4.1",
+    "mongoose-simple-random": "^0.4.1"
   }
 }

@@ -4,12 +4,21 @@
 const fs = require('fs');
 const csv2json = require('csv2json');
 const LineByLineReader = require('line-by-line');
-const mongoose = require('mongoose');
-mongoose.Promise = Promise;
+const mongoose = require('../db/mongooseConfig');
+
+process.setMaxListeners(20);
 
 let Author = require('../models/author');
 let Book = require('../models/book');
 let config = require('../config');
+
+function delay (duration) {
+    return new Promise(function(resolve, reject){
+        setTimeout(function(){
+            resolve();
+        }, duration)
+    });
+}
 
 module.exports.parseBookToAuthorsJson =  function () {
     return new Promise((resolve, reject) => {
@@ -128,128 +137,245 @@ module.exports.parseBooks = function() {
     });
 };
 
+
+// --------- DB parsers --------- //
+
+// --------- Book handlers ------ //
+
 module.exports.parseBooksToDB = function() {
     return new Promise((resolve, reject) => {
+        let currDate = Date.now();
+        let booksReadByLineStream = new LineByLineReader(config.books.filename, {start: 9});
+        let createPromArr = [];
+        let counter = 0;
 
-        let booksReadByLineStream = new LineByLineReader(config.books.filename);
-        let isFirstLine = true;
         booksReadByLineStream.on('line', (line) => {
-            if (!isFirstLine) {
+            counter++;
+
+            createPromArr.push(generateBookCreateProm(line));
+
+            if (createPromArr.length === 250 || counter === config.books.length)  {
+                console.log(counter);
                 booksReadByLineStream.pause();
-                let lineBookArr = line.split(',');
-
-                let authorsRandCounter =
-                    Math.floor(Math.random() * (config.books_to_authors.from_number - config.books_to_authors.to_number) + config.books_to_authors.to_number);
-
-
-                Author.findRandomAuthorsIDs(authorsRandCounter)
-                    .then((authorsArr) => {
-                        let bookObj = {
-                            id: lineBookArr[0],
-                            title: lineBookArr[1],
-                            authors: authorsArr
-                        };
-                        return bookObj;
+                Promise.all(createPromArr)
+                    .then(() => {
+                        createPromArr = [];
+                        if (process.memoryUsage().heapUsed >= 1048576*40) {
+                            return delay(24000)
+                        }
                     })
-                    .then((book) => findOrCreate(Book, book))
-                    .then(() => {booksReadByLineStream.resume();})
-                    .catch((err) => {reject (err)});
+                    .then(() => {
+                        createPromArr = [];
+                    })
+                    .then(() => {
+                        booksReadByLineStream.resume();
+                    })
+                    .catch((err) => {console.log(err)});
             }
-            else isFirstLine = false;
         });
         booksReadByLineStream.on('error', (err) => {
             reject (err);
         });
         booksReadByLineStream.on('end', () => {
+            console.log(Date.now() - currDate);
             resolve ('Books parsed to mongoose')
         })
     });
 };
 
-module.exports.parseAuthorsToDB = function() {
-    return new Promise((resolve, reject) => {
+function generateBookCreateProm (line) {
+    let lineBookArr = line.split(',');
+    let authorsRandCounter =
+        Math.floor(Math.random() * (config.books_to_authors.from_number - config.books_to_authors.to_number) + config.books_to_authors.to_number);
 
-        let authorsReadByLineStream = new LineByLineReader(config.authors.filename);
-        let isFirstLine = true;
-        authorsReadByLineStream.on('line', (line) => {
-            if (!isFirstLine) {
-                authorsReadByLineStream.pause();
-                let lineAuthorArr = line.split(',');
-                let authorObj = {
-                    id: lineAuthorArr[0],
-                    firstName: lineAuthorArr[1],
-                    lastName: lineAuthorArr[2]
-                };
-
-                findOrCreate(Author, authorObj)
-                    .then(() => {authorsReadByLineStream.resume();})
-                    .catch((err) => {reject(err)});
-
-            }
-            else isFirstLine = false;
-        });
-        authorsReadByLineStream.on('error', (err) => {
-            reject (err);
-        });
-        authorsReadByLineStream.on('end', () => {
-            resolve ('Authors parsed to mongoose')
+    return Author.find().limit(authorsRandCounter).skip(Math.random() * (1 - config.authors.length) + config.authors.length)
+        .then((obj) => {
+            return findOrCreate(Book, {
+                id: lineBookArr[0],
+                title: lineBookArr[1],
+                authors: obj
+            })
         })
-    });
-};
-
-function findOrCreate (Model, creatingObj) {
-    return Model.findOne({id: creatingObj.id})
-        .then((foundObj) => {
-            if (!foundObj) {
-                Model.create(creatingObj)
-                    .then((createdObj) => {
-                        //console.log('You successfully create obj with ID ' + createdObj.id);
-                        return createdObj;
-                    })
-                    .catch((err) => {reject(err)})
-            }
-            else {
-                //console.log('Object with this ID already exist');
-            }
-        })
-        .catch((err) => {reject(err)})
+        .catch((err) => {console.log(err)})
 }
 
 module.exports.parseBookFromDBtoJson = function  () {
+    let counter = 0;
     return new Promise((resolve, reject) => {
-        let stream = Book.find().cursor({transform: transformToJson()});
-        const booksDBToJson = fs.createWriteStream(config.mongoose.booksJsonPath);
+
+        const booksDBToJson = fs.createWriteStream(config.mongoose.booksJsonPath, 'UTF-8');
+        Book.find().cursor({transform: transformToJson}).pipe(booksDBToJson);
         booksDBToJson.on('finish', () => {
             resolve('parse Book From DB To json finished')
         });
         booksDBToJson.on('error', (err) => {
             reject(err)
         });
-        booksDBToJson.write('[');
-        stream.pipe(booksDBToJson);
-
     });
 
-    function transformToJson(){
-        return function(data) {
-            if (data.id === 'id_0') return JSON.stringify(data) + '\r\n]';
-            return '\r\n' + JSON.stringify(data) + ",";
-        }
+    function transformToJson (data) {
+        counter++;
+        if (counter === 1) return '[' + '\r\n' + JSON.stringify(data) + ",";
+        if (counter === config.books.length) return '\r\n' + JSON.stringify(data) + '\r\n]';
+        return '\r\n' + JSON.stringify(data) + ",";
     }
 };
 
-module.exports.getBooksForRandAuthor = function () {
-    return Author.findOne()
-        .then((author) => {
-            return Author.findOne({_id : author._id})
-                .then(() => author)
-                .catch((err) => err)
+// --------- Author handlers ------ //
+
+module.exports.parseAuthorsToDB = function() {
+    return new Promise((resolve, reject) => {
+        let currDate = Date.now();
+        let authorsReadByLineStream = new LineByLineReader(config.authors.filename, {start: 9});
+        let createPromArr = [];
+        let counter = 0;
+
+        authorsReadByLineStream.on('line', (line) => {
+            counter++;
+            createPromArr.push(generateAuthorCreatProm(line));
+
+            if (createPromArr.length === 250 || counter === config.authors.length)  {
+                console.log(counter);
+                authorsReadByLineStream.pause();
+
+                Promise.all(createPromArr)
+                    .then(() => {
+                        createPromArr = [];
+                        if (process.memoryUsage().heapUsed >= 1048576*40) {
+                            return delay(24000)
+                        }
+                    })
+                    .then(() => {
+                        createPromArr = [];
+                    })
+                    .then(() => {
+                        authorsReadByLineStream.resume();
+                    })
+                    .catch((err) => {console.log(err)});
+            }
+
+        });
+        authorsReadByLineStream.on('error', (err) => {
+            reject (err);
+        });
+        authorsReadByLineStream.on('end', () => {
+            console.log(Date.now() - currDate);
+            resolve ('Authors parsed to mongoose')
         })
-        .then((author) => {
-            let testAuthor = new Author(author);
-            return testAuthor.findAllBooks()
-        })
-        .catch((err) => err)
+    });
 };
 
+function generateAuthorCreatProm (line) {
+    let lineAuthorArr = line.split(',');
 
+    return findOrCreate(Author, {
+        id: lineAuthorArr[0],
+        firstName: lineAuthorArr[1],
+        lastName: lineAuthorArr[2]
+    }).catch((err) => {console.log(err)})
+}
+
+
+function findOrCreate (Model, creatingObj) {
+    return Model.findOne({id: creatingObj.id})
+        .then((foundObj) => {
+            if (!foundObj) {
+                return Model.create(creatingObj)
+            }
+            else {
+                return 'Object with this ID already exist';
+            }
+        })
+        .catch((err) => err)
+}
+
+
+// SUPER AHUENNA9 FI4A, NIKOMU NE PIZDIT`
+
+/*
+ module.exports.parseAuthorsToDB = function() {
+ return new Promise((resolve, reject) => {
+
+ class myEmmiter extends EventEmitter {
+ constructor() {
+ super();
+ }
+ }
+ const myEmmiter1 = new myEmmiter();
+ myEmmiter1.setMaxListeners(0);
+ let currDate = Date.now();
+ let counter = 0;
+ let linesInBytes = 22;
+ let delTime = 400;
+ let createPromArr = [];
+
+ myEmmiter1.on('length', (stream) =>{
+ /!*if (counter > 2000) {
+ delTime = 4;
+ }*!/
+ stream.end();
+ Promise.all(createPromArr.reduce((Promises, authorObj) => {
+ Promises.push(findOrCreate(Author,authorObj));
+ return Promises;
+ }, []))
+ .then(() => {
+
+ if (counter < 2000) {
+ console.log(counter);
+ return delay(200)
+ }
+ })
+ .then(() => {
+ createPromArr = [];
+ return setStreamEvents();
+ })
+ });
+
+ myEmmiter1.on('last', (stream) =>{
+ console.log(counter);
+ stream.end();
+ Promise.all(createPromArr.reduce((Promises, authorObj) => {
+ Promises.push(findOrCreate(Author,authorObj));
+ return Promises;
+ }, []))
+ .then(() => {
+ createPromArr = [];
+ resolve('Authors Parsed to DB');
+ console.log(Date.now() - currDate);
+ })
+ });
+
+ function setStreamEvents () {
+ let authorsReadByLineStream = new LineByLineReader(config.authors.filename,
+ {start : linesInBytes}
+ );
+ authorsReadByLineStream.on('line', (line) => {
+ linesInBytes += String(line).split('').length + 1;
+ let lineAuthorArr = line.split(',');
+ let authorObj = {
+ id: lineAuthorArr[0],
+ firstName: lineAuthorArr[1],
+ lastName: lineAuthorArr[2]
+ };
+ createPromArr.push(authorObj);
+ counter++;
+ authorsReadByLineStream.pause();
+ if (counter === config.authors.length) {
+ myEmmiter1.emit('last', authorsReadByLineStream);
+ console.log(counter);
+ }
+ else if (createPromArr.length === 20) {
+ myEmmiter1.emit('length', authorsReadByLineStream);
+ }
+ else authorsReadByLineStream.resume();
+ });
+
+ authorsReadByLineStream.on('error', (err) => {
+ reject (err);
+ });
+ authorsReadByLineStream.on('end', () => {
+ })
+ }
+ setStreamEvents();
+ })
+ };*/

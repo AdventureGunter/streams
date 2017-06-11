@@ -1,7 +1,7 @@
 /**
  * Created by User on 09.06.2017.
  */
-const mongoose = require('mongoose');
+const mongoose = require('../db/mongooseConfig');
 const Schema = mongoose.Schema;
 
 const bookSchema = new Schema({
@@ -28,7 +28,6 @@ const bookSchema = new Schema({
 bookSchema.method.findAuthors = function () {
     return this.get('authors');
 };
-
 
 let Book = mongoose.model('Book', bookSchema);
 
