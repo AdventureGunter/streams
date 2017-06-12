@@ -69,7 +69,6 @@ module.exports.parseBookToAuthorsJson =  function () {
 
                     let arr = line.split(',');
                     if(arr[0] === 'id_0') {
-                        console.log('AAAAAAAAAAAAAA');
                         authorsCounter = 0;
                         isFirsAuthtLine = true;
                         transformAuth = new LineByLineReader(config.authors.filename);
@@ -226,14 +225,13 @@ module.exports.parseBookFromDBtoJson = function  () {
 module.exports.parseAuthorsToDB = function() {
     return new Promise((resolve, reject) => {
         let currDate = Date.now();
-        let authorsReadByLineStream = new LineByLineReader(config.authors.filename, {start: 9});
+        let authorsReadByLineStream = new LineByLineReader(config.authors.filename, {start: 22});
         let createPromArr = [];
         let counter = 0;
 
         authorsReadByLineStream.on('line', (line) => {
             counter++;
             createPromArr.push(generateAuthorCreatProm(line));
-
             if (createPromArr.length === 250 || counter === config.authors.length)  {
                 console.log(counter);
                 authorsReadByLineStream.pause();
@@ -246,10 +244,10 @@ module.exports.parseAuthorsToDB = function() {
                         }
                     })
                     .then(() => {
-                        createPromArr = [];
+                        return createPromArr = [];
                     })
                     .then(() => {
-                        authorsReadByLineStream.resume();
+                        return authorsReadByLineStream.resume();
                     })
                     .catch((err) => {console.log(err)});
             }
@@ -277,15 +275,7 @@ function generateAuthorCreatProm (line) {
 
 
 function findOrCreate (Model, creatingObj) {
-    return Model.findOne({id: creatingObj.id})
-        .then((foundObj) => {
-            if (!foundObj) {
-                return Model.create(creatingObj)
-            }
-            else {
-                return 'Object with this ID already exist';
-            }
-        })
+    return Model.findOneAndUpdate({id: creatingObj.id}, creatingObj, {upsert : true})
         .catch((err) => err)
 }
 

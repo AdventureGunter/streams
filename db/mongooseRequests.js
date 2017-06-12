@@ -96,7 +96,7 @@ module.exports.createBookListWithAuthorsObj = function () {
             {$group:
                 {
                     _id: '$id',
-                    lalala: {$addToSet: '$authors'}
+                    authors: {$addToSet: '$authors'}
                 }
             }])
         .limit(10)
@@ -115,7 +115,17 @@ module.exports.createAuthorListWithBookCounter = function () {
                                 _id: elem,
                                 count: { $sum: 1 }
                             }
-                        }])
+                        }
+                        //{$unwind: this}
+                    ])
+                    .then((arr) => {
+                        if(arr.length === 0) return {
+                            _id: elem,
+                            count: 0
+                        };
+                        else return arr[0];
+                    })
+
             }));
         })
 };

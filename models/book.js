@@ -19,15 +19,25 @@ const bookSchema = new Schema({
     authors: [{
         type : Schema.Types.ObjectId,
         ref: 'Author',
-        required: true
-        //unique: true || не работает???в новой монге есть тчо-то для этого, нужно гуглить
+        required: true,
+        index: true
     }]
 });
+/*
+bookSchema.pre('save', (next) => {
+    this.createdAt = new Date();
+    next();
+});
 
+bookSchema.pre('update', (next) => {
+    this.updatedAt= new Date();
+    next();
+});
 
-bookSchema.method.findAuthors = function () {
-    return this.get('authors');
-};
+bookSchema.pre('findOneAndUpdate', (next) => {
+    this.updatedAt = new Date();
+    next();
+});*/
 
 let Book = mongoose.model('Book', bookSchema);
 
