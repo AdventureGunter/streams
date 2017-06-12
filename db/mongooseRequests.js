@@ -84,3 +84,47 @@ module.exports.skip10authorsANDfindBooksForEach3dAuthor = function () {
         })
     })
 };
+
+
+//------- new Task --------//
+
+
+module.exports.createBookListWithAuthorsObj = function () {
+    return Book
+        .aggregate([
+            {$unwind: "$authors"},
+            {$group:
+                {
+                    _id: '$id',
+                    lalala: {$addToSet: '$authors'}
+                }
+            }])
+        .limit(10)
+};
+
+module.exports.createAuthorListWithBookCounter = function () {
+    return Author
+        .find().distinct('_id')
+        .then((arr) => {
+            return Promise.all(arr.map((elem) => {
+                return Book
+                    .aggregate([
+                        {$match: {authors: elem}},
+                        {$group:
+                            {
+                                _id: elem,
+                                count: { $sum: 1 }
+                            }
+                        }])
+            }));
+        })
+};
+
+module.exports.findBooksWithIdFinis0 = function () {
+    return Book
+        .aggregate([
+            {$match: {id: /.*[0]$/}},
+            {$project : {_id: 0, id: 1, bookName : '$title'}}]
+        ).limit(10);
+};
+
